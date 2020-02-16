@@ -91,22 +91,17 @@ FileEventItem* FileEventList::GetCurrentItem()
 
 FileEventItem* FileEventList::GetNextItem(int& nIndex, bool bSelectedOnly, bool bAbove)
 {
-  nIndex = ListView_GetNextItem(m_hWnd, nIndex, (bSelectedOnly ? LVNI_SELECTED : 0) | (bAbove ? LVNI_ABOVE : LVNI_BELOW));
+  //if (nIndex == -1)
+  //  nIndex = ListView_GetNextItem(m_hWnd, nIndex, (bSelectedOnly ? LVNI_SELECTED : 0));
+  //else
+  //  nIndex = ListView_GetNextItem(m_hWnd, nIndex, (bSelectedOnly ? LVNI_SELECTED : 0) | (bAbove ? LVNI_ABOVE : LVNI_BELOW));
+
+  nIndex = ListView_GetNextItem(m_hWnd, nIndex, (bSelectedOnly ? LVNI_SELECTED : 0) | (nIndex != -1 ? (bAbove ? LVNI_ABOVE : LVNI_BELOW) : 0));
   if (nIndex == -1)
     return nullptr;
 
   return GetItem(nIndex);
 }
-
-int FileEventList::GetFirstSelItemIndex()
-{
-  int nIndex = ListView_GetNextItem(m_hWnd, -1, LVNI_SELECTED);
-  if (nIndex == -1)
-    return 0;
-
-  return nIndex;
-}
-
 
 void FileEventList::SelectAll()
 {

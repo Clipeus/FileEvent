@@ -11,7 +11,7 @@ namespace Utils
 
 int ReportBox(LPCWSTR lpszMessage, int nMode /*= MB_OK*/)
 {
-  return MessageBox(FileEventApp::GetApp()->GetMainWnd()->GetHandle(), lpszMessage, FileEventApp::GetApp()->GetAppName().c_str(), nMode);
+  return MessageBox(::GetApp()->GetMainWnd()->GetHandle(), lpszMessage, ::GetApp()->GetAppName().c_str(), nMode);
 }
 
 int ReportBox(UINT uMesID, int nMode /*= MB_OK*/)
@@ -45,7 +45,7 @@ std::wstring LoadString(UINT uID)
   std::wstring result;
   LPWSTR lpszText = nullptr;
 
-  int nLen = ::LoadString(FileEventApp::GetApp()->GetInstance(), uID, reinterpret_cast<LPWSTR>(&lpszText), 0);
+  int nLen = ::LoadString(::GetApp()->GetInstance(), uID, reinterpret_cast<LPWSTR>(&lpszText), 0);
 
   if (lpszText && nLen > 0)
     result.assign(lpszText, nLen);
@@ -160,14 +160,14 @@ bool IsWow64Process()
 
 WaitCursor::WaitCursor()
 {
-  m_hPrevCursor = SetCursor(FileEventApp::GetApp()->GetWaitCursor());
-  FileEventApp::GetApp()->SetWaitCursor(true);
+  m_hPrevCursor = SetCursor(::GetApp()->GetWaitCursor());
+  ::GetApp()->SetWaitCursor(true);
 }
 
 WaitCursor::~WaitCursor()
 {
-  SetCursor(m_hPrevCursor ? m_hPrevCursor : FileEventApp::GetApp()->GetStdCursor());
-  FileEventApp::GetApp()->SetWaitCursor(false);
+  SetCursor(m_hPrevCursor ? m_hPrevCursor : ::GetApp()->GetStdCursor());
+  ::GetApp()->SetWaitCursor(false);
 }
 
 LONG WINAPI UnExFilter(EXCEPTION_POINTERS* pExceptionInfo)

@@ -14,7 +14,7 @@ WindowBase::~WindowBase()
 
 bool WindowBase::Create(DWORD dwExStyle, const std::wstring& strClassName, const std::wstring& strWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu)
 {
-  m_hWnd = ::CreateWindowEx(dwExStyle, strClassName.c_str(), strWindowName.c_str(), dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, FileEventApp::GetApp()->GetInstance(), reinterpret_cast<LPVOID>(this));
+  m_hWnd = ::CreateWindowEx(dwExStyle, strClassName.c_str(), strWindowName.c_str(), dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, ::GetApp()->GetInstance(), reinterpret_cast<LPVOID>(this));
   return m_hWnd != nullptr;
 }
 

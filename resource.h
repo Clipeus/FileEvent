@@ -55,6 +55,8 @@
 #define IDD_DIALOG1                     149
 #define IDD_MONITOR_OPTIONS             149
 #define IDS_FILE_ACTION_MODIFIED        150
+#define IDR_MENU1                       150
+#define IDR_ITEM_MENU                   150
 #define IDS_FILE_ACTION_RENAMED_OLD_NAME 151
 #define IDS_FILE_ACTION_RENAMED_NEW_NAME 152
 #define IDS_UNKNOWN_ACTION              153
@@ -106,6 +108,7 @@
 #define ID_FILE_EXIT                    32808
 #define ID_HELP_ABOUT                   32809
 #define IDS_IDLE_STATUS                 32810
+#define ID_Menu32813                    32813
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -113,8 +116,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        150
-#define _APS_NEXT_COMMAND_VALUE         32813
+#define _APS_NEXT_RESOURCE_VALUE        151
+#define _APS_NEXT_COMMAND_VALUE         32814
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

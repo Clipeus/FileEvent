@@ -63,9 +63,9 @@ bool FileEventWnd::Init()
   wc.lpfnWndProc = WindowBase::s_WndProc;
   wc.cbClsExtra = 0;
   wc.cbWndExtra = 0;
-  wc.hInstance = FileEventApp::GetApp()->GetInstance();
-  wc.hIcon = (HICON)LoadImage(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0);
-  wc.hIconSm = (HICON)LoadImage(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0);
+  wc.hInstance = ::GetApp()->GetInstance();
+  wc.hIcon = (HICON)LoadImage(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0);
+  wc.hIconSm = (HICON)LoadImage(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0);
   wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wc.hbrBackground = nullptr;
   wc.lpszMenuName = MAKEINTRESOURCE(IDM_MAIN);
@@ -82,7 +82,7 @@ bool FileEventWnd::Init()
 
 bool FileEventWnd::Create(int nCmdShow)
 {
-  if (!WindowBase::Create(WS_EX_ACCEPTFILES, GetClassName(), FileEventApp::GetApp()->GetAppName()))
+  if (!WindowBase::Create(WS_EX_ACCEPTFILES, GetClassName(), ::GetApp()->GetAppName()))
   {
     Utils::ShowOSError();
     return false;
@@ -101,12 +101,19 @@ LPCWSTR FileEventWnd::GetClassName()
   return L"FileEventMainWindow";
 }
 
-void FileEventWnd::ChangeUIState()
+void FileEventWnd::ChangeUIState(HMENU hContextMenu)
 {
-  UpdateStatusBarText();
-
   long nSelCount = ListView_GetSelectedCount(*m_spFileEventList);
   long nCount = ListView_GetItemCount(*m_spFileEventList);
+
+  if (hContextMenu != nullptr)
+  {
+    ::EnableMenuItem(hContextMenu, ID_VIEW_DETAILS, MF_BYCOMMAND | (nSelCount > 0 ? MF_ENABLED : MF_GRAYED));
+    ::EnableMenuItem(hContextMenu, ID_EDIT_COPY, MF_BYCOMMAND | (nSelCount > 0 ? MF_ENABLED : MF_GRAYED));
+    ::EnableMenuItem(hContextMenu, ID_EDIT_CLEAR, MF_BYCOMMAND | (m_spFileEventMonitor->IsStarted() ? MF_ENABLED : MF_GRAYED));
+    ::EnableMenuItem(hContextMenu, ID_EDIT_SELECTALL, MF_BYCOMMAND | (nCount > 0 ? MF_ENABLED : MF_GRAYED));
+    return;
+  }
 
   HMENU hMainMenu = ::GetMenu(m_hWnd);
   HMENU hMenu = ::GetSubMenu(hMainMenu, 0);
@@ -177,7 +184,9 @@ void FileEventWnd::ChangeUIState()
     m_strMonitorPath.clear();
   }
 
-  std::wstring title; 
+  UpdateStatusBarText();
+
+  std::wstring title;
   if (!m_strSavedPath.empty())
   {
     std::filesystem::path path = m_strSavedPath;
@@ -480,7 +489,7 @@ bool FileEventWnd::OnFind(FindMode enFindMode)
       return true;
     };
 
-    if (m_pFindDlg->GetFindFlags() & FindDlg::Flags::FD_ACTION)
+    if (m_pFindDlg->GetFindFlags() & FindDlg::Flags::FD_WORDONLY)
     {
       if (strText == strFindText)
       {
@@ -511,7 +520,7 @@ bool FileEventWnd::OnFind(FindMode enFindMode)
   std::wstring strFindText = m_pFindDlg->GetFindText();
   std::transform(strFindText.cbegin(), strFindText.cend(), strFindText.begin(), toupper);
 
-  int nIndex = ListView_GetNextItem(*m_spFileEventList, -1, LVNI_SELECTED);//m_spFileEventList->GetFirstSelItemIndex();
+  int nIndex = ListView_GetNextItem(*m_spFileEventList, -1, LVNI_SELECTED);
   if (nIndex == -1)
     nIndex = 0;
   else if (enFindMode != FindMode::Find)
@@ -583,7 +592,7 @@ void FileEventWnd::OnDestroy(HWND hWnd)
   LPWINDOWPLACEMENT pWinPos = reinterpret_cast<LPWINDOWPLACEMENT>(buf.data());
   pWinPos->length = sizeof(WINDOWPLACEMENT);
   ::GetWindowPlacement(m_hWnd, pWinPos);
-  Utils::RegistryW::SetValue(FileEventApp::GetApp()->GetRegistryRoot(), L"WindowPos", buf);
+  Utils::RegistryW::SetValue(::GetApp()->GetRegistryRoot(), L"WindowPos", buf);
 
   if (m_spFileEventMonitor->IsStarted())
     m_spFileEventMonitor->Stop();
@@ -601,7 +610,7 @@ bool FileEventWnd::OnCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
   m_hWnd = hWnd;
 
-  m_hToolBar = ::CreateWindowEx(0, TOOLBARCLASSNAME, nullptr, WS_CHILD | WS_BORDER | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_WRAPABLE, 0, 0, 0, 0, m_hWnd, nullptr, FileEventApp::GetApp()->GetInstance(), nullptr);
+  m_hToolBar = ::CreateWindowEx(0, TOOLBARCLASSNAME, nullptr, WS_CHILD | WS_BORDER | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_WRAPABLE, 0, 0, 0, 0, m_hWnd, nullptr, ::GetApp()->GetInstance(), nullptr);
   if (!m_hToolBar)
   {
     Utils::ShowOSError();
@@ -615,24 +624,24 @@ bool FileEventWnd::OnCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
     return false;
   }
 
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_OPEN_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_SAVE_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_COPY_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_CLEAR_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_FIND_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_START_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_PAUSE_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_STOP_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_DETAILS_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_OPTION_BTN)));
-  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_OPEN_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_SAVE_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_COPY_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_CLEAR_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_FIND_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_START_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_PAUSE_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_STOP_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_DETAILS_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_OPTION_BTN)));
+  ::ImageList_AddIcon(m_hImageList, ::LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
 
   ::SendMessage(m_hToolBar, TB_SETIMAGELIST, IDC_TOOLBAR_IMAGE_LIST, (LPARAM)m_hImageList);
   ::SendMessage(m_hToolBar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
   ::SendMessage(m_hToolBar, TB_ADDBUTTONS, sizeof(tbButtons) / sizeof(tbButtons[0]), (LPARAM)&tbButtons);
   ::SendMessage(m_hToolBar, TB_AUTOSIZE, 0, 0);
 
-  m_hStatusBar = ::CreateWindowEx(0, STATUSCLASSNAME, nullptr, WS_CHILD | WS_VISIBLE | WS_BORDER | SBARS_SIZEGRIP, 0, 0, 0, 0, m_hWnd, (HMENU)IDC_MAIN_STATUSBAR, FileEventApp::GetApp()->GetInstance(), nullptr);
+  m_hStatusBar = ::CreateWindowEx(0, STATUSCLASSNAME, nullptr, WS_CHILD | WS_VISIBLE | WS_BORDER | SBARS_SIZEGRIP, 0, 0, 0, 0, m_hWnd, (HMENU)IDC_MAIN_STATUSBAR, ::GetApp()->GetInstance(), nullptr);
   if (!m_hStatusBar)
   {
     Utils::ShowOSError();
@@ -659,7 +668,7 @@ bool FileEventWnd::OnCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
   ChangeUIState();
 
   std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT));
-  if (Utils::RegistryW::Value(FileEventApp::GetApp()->GetRegistryRoot(), L"WindowPos", buf))
+  if (Utils::RegistryW::Value(::GetApp()->GetRegistryRoot(), L"WindowPos", buf))
     ::SetWindowPlacement(m_hWnd, reinterpret_cast<LPWINDOWPLACEMENT>(buf.data()));
 
   return true;
@@ -822,6 +831,45 @@ void FileEventWnd::OnMenuSelect(HWND hWnd, HMENU hMenu, int item, HMENU hMenuPop
 
 void FileEventWnd::OnContextMenu(HWND hWnd, HWND hwndContext, UINT x, UINT y)
 {
+  POINT pt;
+  RECT rect;
+
+  if (x == -1 || y == -1)
+  {
+    int nItem = ListView_GetNextItem(*m_spFileEventList, -1, LVNI_SELECTED);
+    if (nItem == -1)
+      ::GetClientRect(*m_spFileEventList, &rect);
+    else
+      ListView_GetItemRect(*m_spFileEventList, nItem, &rect, LVIR_BOUNDS);
+
+    LVCOLUMN col = { 0 };
+    col.mask = LVCF_WIDTH;
+    ListView_GetColumn(*m_spFileEventList, 0, &col);
+    pt.x = rect.left + col.cx;
+    pt.y = rect.top;
+    ::ClientToScreen(*m_spFileEventList, &pt);
+  }
+  else
+  {
+    pt.x = x;
+    pt.y = y;
+
+    if (*m_spFileEventList != ::WindowFromPoint(pt))
+      return;
+  }
+
+  HMENU hMenuMain = ::LoadMenu(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDR_ITEM_MENU));
+  HMENU hMenuContext = ::GetSubMenu(hMenuMain, 0);
+
+  ::SetMenuDefaultItem(hMenuContext, 0, true);
+
+  long nSelCount = ListView_GetSelectedCount(*m_spFileEventList);
+  long nCount = ListView_GetItemCount(*m_spFileEventList);
+  ChangeUIState(hMenuContext);
+
+  ::TrackPopupMenu(hMenuContext, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON | TPM_LEFTBUTTON, pt.x, pt.y, 0, hWnd, nullptr);
+  ::DestroyMenu(hMenuContext);
+  ::DestroyMenu(hMenuMain);
 }
 
 LRESULT FileEventWnd::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
@@ -863,6 +911,11 @@ LRESULT FileEventWnd::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
 
 bool FileEventWnd::OnSetCursor(HWND hWnd, HWND hWndCursor, UINT codeHitTest, UINT msg)
 {
+  if (::GetApp()->IsWaitCursor())
+  {
+    SetCursor(::GetApp()->GetWaitCursor());
+    return true;
+  }
   return FORWARD_WM_SETCURSOR(hWnd, hWndCursor, codeHitTest, msg, ::DefWindowProc);
 }
 

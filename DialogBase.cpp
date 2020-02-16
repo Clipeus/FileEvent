@@ -16,7 +16,7 @@ DialogBase::~DialogBase()
 
 INT_PTR DialogBase::DoModal(HWND hWnd, LPCTSTR lpTemplateName /*= nullptr*/)
 {
-  return ::DialogBoxParam(FileEventApp::GetApp()->GetInstance(),
+  return ::DialogBoxParam(::GetApp()->GetInstance(),
     lpTemplateName != nullptr ? lpTemplateName : m_lpTemplateName, hWnd, s_DlgProc, reinterpret_cast<LPARAM>(this));
 }
 
@@ -41,8 +41,8 @@ void DialogBase::OnDestroy(HWND hWnd)
 
 bool DialogBase::OnInitDialog(HWND hWnd, HWND hWndFocus, LPARAM lParam)
 {
-  ::SendMessage(hWnd, WM_SETICON, true, (LPARAM)LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
-  ::SendMessage(hWnd, WM_SETICON, false, (LPARAM)LoadIcon(FileEventApp::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
+  ::SendMessage(hWnd, WM_SETICON, true, (LPARAM)LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
+  ::SendMessage(hWnd, WM_SETICON, false, (LPARAM)LoadIcon(::GetApp()->GetInstance(), MAKEINTRESOURCE(IDI_MAIN)));
   return true;
 }
 

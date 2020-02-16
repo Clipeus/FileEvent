@@ -16,7 +16,7 @@ INT_PTR OptionsDlg::DoModal(HWND hWnd, LPCTSTR lpTemplateName /*= nullptr*/)
 
   PSheetPage[0].dwSize = sizeof(PROPSHEETPAGE);
   PSheetPage[0].dwFlags = PSP_DEFAULT;
-  PSheetPage[0].hInstance = FileEventApp::GetApp()->GetInstance();
+  PSheetPage[0].hInstance = ::GetApp()->GetInstance();
   PSheetPage[0].pszIcon = 0;
   PSheetPage[0].pszTemplate = MAKEINTRESOURCE(IDD_GENERAL);
   PSheetPage[0].pfnDlgProc = s_DlgProc;
@@ -25,7 +25,7 @@ INT_PTR OptionsDlg::DoModal(HWND hWnd, LPCTSTR lpTemplateName /*= nullptr*/)
 
   PSheetHeader.dwSize = sizeof(PROPSHEETHEADER);
   PSheetHeader.dwFlags = PSH_USEICONID | PSH_PROPSHEETPAGE | PSH_NOAPPLYNOW;
-  PSheetHeader.hInstance = FileEventApp::GetApp()->GetInstance();
+  PSheetHeader.hInstance = ::GetApp()->GetInstance();
   PSheetHeader.pszIcon = MAKEINTRESOURCE(IDI_MAIN);
   PSheetHeader.hwndParent = hWnd;
   std::wstring strCaption = Utils::LoadString(IDS_CAPTION_SET);
@@ -49,11 +49,11 @@ LRESULT OptionsDlg::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
 {
   if (pNmndr->code == PSN_APPLY)
   {
-    //FileEventApp::GetApp()->GetOptions()->bURAS = (SendDlgItemMessage(hWnd, IDC_CHECK1, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
-    //FileEventApp::GetApp()->GetOptions()->bDNSDWIF = (SendDlgItemMessage(hWnd, IDC_CHECK2, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
-    //FileEventApp::GetApp()->GetOptions()->bDNSDWEF = (SendDlgItemMessage(hWnd, IDC_CHECK3, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
-    //FileEventApp::GetApp()->GetOptions()->bMI = (SendDlgItemMessage(hWnd, IDC_RADIO1, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
-    //FileEventApp::GetApp()->GetOptions()->bAI = (SendDlgItemMessage(hWnd, IDC_RADIO3, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
+    //::GetApp()->GetOptions()->bURAS = (SendDlgItemMessage(hWnd, IDC_CHECK1, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
+    //::GetApp()->GetOptions()->bDNSDWIF = (SendDlgItemMessage(hWnd, IDC_CHECK2, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
+    //::GetApp()->GetOptions()->bDNSDWEF = (SendDlgItemMessage(hWnd, IDC_CHECK3, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
+    //::GetApp()->GetOptions()->bMI = (SendDlgItemMessage(hWnd, IDC_RADIO1, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
+    //::GetApp()->GetOptions()->bAI = (SendDlgItemMessage(hWnd, IDC_RADIO3, BM_GETCHECK, BST_CHECKED, 0) == BST_CHECKED);
   }
   return false;
 }

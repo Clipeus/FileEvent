@@ -60,3 +60,7 @@ private:
   HCURSOR m_hStdCursor = nullptr;
 };
 
+inline FileEventApp* GetApp()
+{
+  return FileEventApp::GetApp();
+}

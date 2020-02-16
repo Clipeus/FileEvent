@@ -32,7 +32,7 @@ void MonOptionsDlg::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
       m_Options.dwNotifyFilter |= ::IsDlgButtonChecked(m_hWnd, IDC_FILE_NOTIFY_CHANGE_CREATION) == BST_CHECKED ? FILE_NOTIFY_CHANGE_CREATION : 0;
       m_Options.dwNotifyFilter |= ::IsDlgButtonChecked(m_hWnd, IDC_FILE_NOTIFY_CHANGE_SECURITY) == BST_CHECKED ? FILE_NOTIFY_CHANGE_SECURITY : 0;
 
-      std::wstring strRoot = FileEventApp::GetApp()->GetRegistryRoot();
+      std::wstring strRoot = ::GetApp()->GetRegistryRoot();
       Utils::RegistryW::SetValue(strRoot, L"MonitorPath", m_Options.strPath);
       Utils::RegistryW::SetValue(strRoot, L"WatchSubtree", m_Options.bWatchSubtree);
       Utils::RegistryW::SetValue(strRoot, L"NotifyFilter", m_Options.dwNotifyFilter);
@@ -49,7 +49,7 @@ void MonOptionsDlg::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
     {
       if (codeNotify == BN_CLICKED)
       {
-        std::wstring path = FileEventApp::GetApp()->GetMainWnd()->SelectFile(FileEventWnd::SelectFileMode::SelectFolder);
+        std::wstring path = ::GetApp()->GetMainWnd()->SelectFile(FileEventWnd::SelectFileMode::SelectFolder);
         if (!path.empty())
           ::SetDlgItemText(m_hWnd, IDC_PATH, path.c_str());
       }
@@ -70,7 +70,7 @@ void MonOptionsDlg::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
 
 bool MonOptionsDlg::OnInitDialog(HWND hWnd, HWND hWndFocus, LPARAM lParam)
 {
-  std::wstring strRoot = FileEventApp::GetApp()->GetRegistryRoot();
+  std::wstring strRoot = ::GetApp()->GetRegistryRoot();
   Utils::RegistryW::Value(strRoot, L"MonitorPath", m_Options.strPath);
   Utils::RegistryW::Value(strRoot, L"WatchSubtree", (unsigned long&)m_Options.bWatchSubtree);
   Utils::RegistryW::Value(strRoot, L"NotifyFilter", m_Options.dwNotifyFilter);

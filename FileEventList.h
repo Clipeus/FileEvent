@@ -13,7 +13,6 @@ public:
   FileEventItem* GetItem(int nIndex = -1);
   FileEventItem* GetCurrentItem();
   FileEventItem* GetNextItem(int& nIndex, bool bSelectedOnly, bool bAbove = false);
-  int GetFirstSelItemIndex();
   void SelectAll();
   void Clear();
   void AdjustRect(int x, int y, int cx, int cy, bool bMove = true);

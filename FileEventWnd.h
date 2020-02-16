@@ -41,7 +41,7 @@ public:
   void OnError(int nIDs, DWORD dwError);
 
 private:
-  void ChangeUIState();
+  void ChangeUIState(HMENU hContextMenu = nullptr);
   void UpdateStatusBarText();
   void SaveFile(const std::wstring& path);
   void OpenFile(const std::wstring& path);
