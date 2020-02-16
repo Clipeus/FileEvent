@@ -37,7 +37,7 @@ private:
 
 private:
   std::atomic_bool m_bStarted = false;
-  bool m_bSuspended = false;
+  std::atomic_bool m_bSuspended = false;
   IFileEventNotify* m_pFileEventNotify = nullptr;
   std::unique_ptr<std::thread> m_pMonitorThread;
   Utils::unique_handle m_hExitEvent = Utils::make_unique_handle();

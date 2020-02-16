@@ -34,7 +34,11 @@
 #define IDS_CANNOT_FIND                 122
 #define IDS_CANNOT_FIND_SEL             123
 #define IDS_OPEN_DIR_FAILED             124
+#define IDS_MON_STOPED                  125
+#define IDS_MON_STARTED                 126
+#define IDS_MON_PAUSED                  127
 #define IDR_MAINFRAME                   128
+#define IDS_VIEW_MODE                   128
 #define IDI_MAIN                        129
 #define IDI_OPEN_BTN                    133
 #define IDI_SAVE_BTN                    134
@@ -55,7 +59,6 @@
 #define IDD_DIALOG1                     149
 #define IDD_MONITOR_OPTIONS             149
 #define IDS_FILE_ACTION_MODIFIED        150
-#define IDR_MENU1                       150
 #define IDR_ITEM_MENU                   150
 #define IDS_FILE_ACTION_RENAMED_OLD_NAME 151
 #define IDS_FILE_ACTION_RENAMED_NEW_NAME 152

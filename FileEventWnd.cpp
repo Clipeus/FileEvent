@@ -22,8 +22,11 @@ constexpr int MENU_PIC_SIZE = 16;
 constexpr int MENU_PIC_PLACE_SIZE = MENU_PIC_SIZE + (MENU_PIC_SIZE * 25 / 100); // + 25%
 constexpr int MENU_PIC_INDENT = MENU_PIC_SIZE - 2;
 
-constexpr int WM_MONITOREVENT = WM_USER + 1;
-constexpr int WM_MONITORERROR = WM_MONITOREVENT + 1;
+constexpr int STATUSBAR_PART2_WIDTH = 150;
+
+constexpr int WM_MONITORSTATE = WM_USER + 1;
+constexpr int WM_MONITOREVENT = WM_USER + 2;
+constexpr int WM_MONITORERROR = WM_USER + 3;
 
 TBBUTTON tbButtons[] =
 {
@@ -90,8 +93,18 @@ bool FileEventWnd::Create(int nCmdShow)
 
   _ASSERTE(m_hWnd);
 
-  ::ShowWindow(m_hWnd, nCmdShow);
-  ::UpdateWindow(m_hWnd);
+  if ((nCmdShow == SW_SHOWNORMAL) || (nCmdShow == SW_SHOWDEFAULT))
+  {
+    std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT));
+    if (Utils::RegistryW::Value(::GetApp()->GetRegistryRoot(), L"WindowPos", buf))
+      ::SetWindowPlacement(m_hWnd, reinterpret_cast<LPWINDOWPLACEMENT>(buf.data()));
+  }
+  else
+  {
+    ShowWindow(m_hWnd, nCmdShow);
+  }
+
+  UpdateWindow(m_hWnd);
 
   return true;
 }
@@ -130,8 +143,8 @@ void FileEventWnd::ChangeUIState(HMENU hContextMenu)
   ::EnableMenuItem(hMenu, ID_EDIT_COPY, MF_BYCOMMAND | (nSelCount > 0 ? MF_ENABLED : MF_GRAYED));
   ::SendMessage(m_hToolBar, TB_ENABLEBUTTON, ID_EDIT_COPY, MAKELONG(nSelCount > 0, 0));
 
-  ::EnableMenuItem(hMenu, ID_EDIT_CLEAR, MF_BYCOMMAND | (m_spFileEventMonitor->IsStarted() ? MF_ENABLED : MF_GRAYED));
-  ::SendMessage(m_hToolBar, TB_ENABLEBUTTON, ID_EDIT_CLEAR, MAKELONG(m_spFileEventMonitor->IsStarted(), 0));
+  ::EnableMenuItem(hMenu, ID_EDIT_CLEAR, MF_BYCOMMAND | (nCount > 0 && m_spFileEventMonitor->IsStarted() ? MF_ENABLED : MF_GRAYED));
+  ::SendMessage(m_hToolBar, TB_ENABLEBUTTON, ID_EDIT_CLEAR, MAKELONG(nCount > 0 && m_spFileEventMonitor->IsStarted(), 0));
 
   ::EnableMenuItem(hMenu, ID_EDIT_FIND, MF_BYCOMMAND | (nCount > 0 ? MF_ENABLED : MF_GRAYED));
   ::SendMessage(m_hToolBar, TB_ENABLEBUTTON, ID_EDIT_FIND, MAKELONG(nCount > 0, 0));
@@ -178,6 +191,7 @@ void FileEventWnd::ChangeUIState(HMENU hContextMenu)
     ::SendMessage(m_hToolBar, TB_SETBUTTONINFO, ID_MONITOR_PAUSE, (LPARAM)&BtnInfo);
 
     m_strSavedPath.clear();
+    m_bViewMode = false;
   }
   else
   {
@@ -208,7 +222,21 @@ void FileEventWnd::UpdateStatusBarText()
   long nSelCount = ListView_GetSelectedCount(*m_spFileEventList);
   long nCount = ListView_GetItemCount(*m_spFileEventList);
 
-  SendMessage(m_hStatusBar, SB_SETTEXT, 0, (LPARAM)Utils::StrFormat(Utils::LoadString(IDS_IDLE_STATUS).c_str(), nCount, nSelCount).c_str());
+  ::SendMessage(m_hStatusBar, SB_SETPARTS, 2, (LPARAM)m_ptWidth);
+  ::SendMessage(m_hStatusBar, SB_SETTEXT, 0, (LPARAM)Utils::StrFormat(Utils::LoadString(IDS_IDLE_STATUS).c_str(), nCount, nSelCount).c_str());
+  if (m_spFileEventMonitor->IsSuspended())
+    ::SendMessage(m_hStatusBar, SB_SETTEXT, 1, (LPARAM)Utils::LoadString(IDS_MON_PAUSED).c_str());
+  else if (m_spFileEventMonitor->IsStarted())
+    ::SendMessage(m_hStatusBar, SB_SETTEXT, 1, (LPARAM)Utils::LoadString(IDS_MON_STARTED).c_str());
+  else if (m_bViewMode)
+    ::SendMessage(m_hStatusBar, SB_SETTEXT, 1, (LPARAM)Utils::LoadString(IDS_VIEW_MODE).c_str());
+  else
+  ::SendMessage(m_hStatusBar, SB_SETTEXT, 1, (LPARAM)Utils::LoadString(IDS_MON_STOPED).c_str());
+}
+
+void FileEventWnd::OnState(FileEventState eState, LPCWSTR lpszPath)
+{
+  ::SendMessage(m_hWnd, WM_MONITORSTATE, (WPARAM)eState, reinterpret_cast<LPARAM>(lpszPath));
 }
 
 void FileEventWnd::OnEvent(FileEventItem* pItem)
@@ -218,7 +246,7 @@ void FileEventWnd::OnEvent(FileEventItem* pItem)
 
 void FileEventWnd::OnError(int nIDs, DWORD dwError)
 {
-  ::PostMessage(m_hWnd, WM_MONITORERROR, nIDs, dwError);
+  ::SendMessage(m_hWnd, WM_MONITORERROR, nIDs, dwError);
 }
 
 void FileEventWnd::OpenFile(const std::wstring& path)
@@ -310,6 +338,7 @@ void FileEventWnd::OpenFile(const std::wstring& path)
   }
 
   m_bDirty = false;
+  m_bViewMode = true;
   m_strSavedPath = path;
 }
 
@@ -420,6 +449,8 @@ void FileEventWnd::CopyToClipboard()
 
 std::wstring FileEventWnd::SelectFile(SelectFileMode enSelectFileMode) const
 {
+  Utils::WaitCursor wc;
+
   if (!m_bComInited)
     ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
@@ -451,6 +482,8 @@ std::wstring FileEventWnd::SelectFile(SelectFileMode enSelectFileMode) const
       std::wstring str4 = Utils::LoadString(IDS_FILE_FILTER_ALL_2);
       filter[1].pszSpec = str4.c_str();
       pfd->SetFileTypes(2, filter);
+
+      pfd->SetDefaultExtension(str2.substr(2).c_str());
     }
 
     if (SUCCEEDED(pfd->Show(m_hWnd)))
@@ -576,11 +609,12 @@ LRESULT FileEventWnd::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
     HANDLE_MSG(hWnd, WM_INITMENUPOPUP, OnInitMenuPopup);
     HANDLE_MSG(hWnd, WM_MEASUREITEM, OnMeasureItem), true; // should return true
     HANDLE_MSG(hWnd, WM_DRAWITEM, OnDrawItem), true; // should return true
+    case WM_MONITORSTATE:
+      return OnMonitorState(hWnd, (FileEventState)wParam, reinterpret_cast<LPWSTR>(lParam)), 0L;
     case WM_MONITOREVENT:
       return OnMonitorEvent(hWnd, reinterpret_cast<FileEventItem*>(lParam)), 0L;
     case WM_MONITORERROR:
       return OnMonitorError(hWnd, wParam, lParam), 0L;
-
     default:
       return ::DefWindowProc(hWnd, uMsg, wParam, lParam);
   }
@@ -588,11 +622,11 @@ LRESULT FileEventWnd::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 void FileEventWnd::OnDestroy(HWND hWnd)
 {
-  std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT));
+  std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT), 0);
   LPWINDOWPLACEMENT pWinPos = reinterpret_cast<LPWINDOWPLACEMENT>(buf.data());
   pWinPos->length = sizeof(WINDOWPLACEMENT);
-  ::GetWindowPlacement(m_hWnd, pWinPos);
-  Utils::RegistryW::SetValue(::GetApp()->GetRegistryRoot(), L"WindowPos", buf);
+  if (::GetWindowPlacement(m_hWnd, pWinPos))
+    Utils::RegistryW::SetValue(::GetApp()->GetRegistryRoot(), L"WindowPos", buf);
 
   if (m_spFileEventMonitor->IsStarted())
     m_spFileEventMonitor->Stop();
@@ -667,10 +701,6 @@ bool FileEventWnd::OnCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 
   ChangeUIState();
 
-  std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT));
-  if (Utils::RegistryW::Value(::GetApp()->GetRegistryRoot(), L"WindowPos", buf))
-    ::SetWindowPlacement(m_hWnd, reinterpret_cast<LPWINDOWPLACEMENT>(buf.data()));
-
   return true;
 }
 
@@ -678,6 +708,10 @@ void FileEventWnd::OnSize(HWND hWnd, UINT state, int cx, int cy)
 {
   ::SendMessage(m_hToolBar, WM_SIZE, state, 0);
   ::SendMessage(m_hStatusBar, WM_SIZE, state, 0);
+
+  m_ptWidth[0] = cx - STATUSBAR_PART2_WIDTH;
+  m_ptWidth[1] = -1;
+  ::SendMessage(m_hStatusBar, SB_SETPARTS, 2, (LPARAM)m_ptWidth);
 
   RECT Rect;
   int nTop, nBottom;
@@ -773,7 +807,6 @@ void FileEventWnd::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
       {
         m_spFileEventList->Clear();
         FileEventMonitor::Options options = dlg.GetOptions();
-        m_strMonitorPath = options.strPath;
         m_spFileEventMonitor->Start(this, &options);
       }
 
@@ -791,7 +824,6 @@ void FileEventWnd::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
     case ID_MONITOR_STOP:
     {
       m_spFileEventMonitor->Stop();
-      m_strMonitorPath.clear();
       break;
     }
     case ID_HELP_ABOUT:
@@ -825,7 +857,7 @@ void FileEventWnd::OnMenuSelect(HWND hWnd, HMENU hMenu, int item, HMENU hMenuPop
       if (std::wstring::npos != pos)
         strText = strText.substr(0, pos);
     }
-    SendMessage(m_hStatusBar, SB_SETTEXT, 0, (LPARAM)strText.c_str());
+    ::SendMessage(m_hStatusBar, SB_SETTEXT, 0, (LPARAM)strText.c_str());
   }
 }
 
@@ -1088,6 +1120,14 @@ void FileEventWnd::OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, bool fSyst
       }
     }
   }
+}
+
+void FileEventWnd::OnMonitorState(HWND hWnd, FileEventState eState, const std::wstring& strPath)
+{
+  if (FileEventState::Started == eState)
+    m_strMonitorPath = strPath;
+
+  ChangeUIState();
 }
 
 void FileEventWnd::OnMonitorEvent(HWND hWnd, FileEventItem* pItem)

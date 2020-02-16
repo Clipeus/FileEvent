@@ -14,8 +14,16 @@ struct FileEventItem
   std::wstring strDescription;
 };
 
+enum class FileEventState : uint8_t
+{
+  Stoped,
+  Started,
+  Suspened
+};
+
 __interface IFileEventNotify
 {
+  void OnState(FileEventState eState, LPCWSTR lpszPath);
   void OnEvent(FileEventItem* pItem);
   void OnError(int nIDs, DWORD dwError);
 };

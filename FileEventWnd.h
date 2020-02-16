@@ -37,6 +37,7 @@ public:
 
 public:
   //IFileEventNotify
+  void OnState(FileEventState eState, LPCWSTR lpszPath);
   void OnEvent(FileEventItem* pItem);
   void OnError(int nIDs, DWORD dwError);
 
@@ -64,10 +65,12 @@ private:
   void OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, bool fSystemMenu);
   void OnMonitorEvent(HWND hWnd, FileEventItem* pItem);
   void OnMonitorError(HWND hWnd, int nIDs, DWORD dwError);
+  void OnMonitorState(HWND hWnd, FileEventState eState, const std::wstring& strPath);
 
 private:
   bool m_bComInited = false;
   bool m_bDirty = false;
+  bool m_bViewMode = false;
   std::wstring m_strMonitorPath;
   std::wstring m_strSavedPath;
   HIMAGELIST m_hImageList = nullptr;
@@ -76,5 +79,6 @@ private:
   std::unique_ptr<FileEventList> m_spFileEventList;
   std::unique_ptr<FileEventMonitor> m_spFileEventMonitor;
   std::unique_ptr<FindDlg> m_pFindDlg;
+  int m_ptWidth[2] = { 0, 0 };
 };
 

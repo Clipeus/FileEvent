@@ -59,8 +59,6 @@ void FileEventMonitor::Suspend()
 
   if (m_hSuspendResumeEvent)
     ::SetEvent(m_hSuspendResumeEvent.get());
-
-  m_bSuspended = true;
 }
 
 void FileEventMonitor::Resume()
@@ -70,12 +68,13 @@ void FileEventMonitor::Resume()
 
   if (m_hSuspendResumeEvent)
     ::SetEvent(m_hSuspendResumeEvent.get());
-
-  m_bSuspended = false;
 }
 
 void FileEventMonitor::Process()
 {
+  m_bStarted = true;
+  m_pFileEventNotify->OnState(FileEventState::Started, m_MonOptions.strPath.c_str());
+
   Utils::unique_handle hDir = Utils::make_unique_handle(::CreateFile(m_MonOptions.strPath.c_str(),
     GENERIC_READ | FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr));
 
@@ -84,9 +83,6 @@ void FileEventMonitor::Process()
     m_pFileEventNotify->OnError(IDS_OPEN_DIR_FAILED, ::GetLastError());
     return;
   }
-
-  m_bStarted = true;
-  bool result = true;
 
   Utils::unique_handle hEvent = Utils::make_unique_handle(::CreateEvent(nullptr, false, false, nullptr));
   OVERLAPPED Overlapped;
@@ -98,6 +94,7 @@ void FileEventMonitor::Process()
   arrEvents[1] = m_hSuspendResumeEvent.get();
   arrEvents[2] = Overlapped.hEvent;
 
+  bool result = true;
   while (result)
   {
     std::vector<uint8_t> vecBuf;
@@ -119,17 +116,18 @@ void FileEventMonitor::Process()
     }
     else if (dwRetCode == WAIT_OBJECT_0 + 1)
     {
-      _RPTF0(_CRT_WARN, "Suspend\n");
+      m_bSuspended = true;
+      m_pFileEventNotify->OnState(FileEventState::Suspened, m_MonOptions.strPath.c_str());
+
       dwRetCode = ::WaitForMultipleObjects(arrEvents.size() - 1, arrEvents.data(), false, INFINITE);
       if (dwRetCode == WAIT_OBJECT_0)
         break;
 
-      _RPTF0(_CRT_WARN, "Resume\n");
+      m_bSuspended = false;
+      m_pFileEventNotify->OnState(FileEventState::Started, m_MonOptions.strPath.c_str());
     }
     else if (dwRetCode == WAIT_OBJECT_0 + 2)
     {
-      _RPTF0(_CRT_WARN, "Notify signal\n");
-
       FILE_NOTIFY_INFORMATION* pNotify;
       int offset = 0;
 
@@ -177,6 +175,9 @@ void FileEventMonitor::Process()
     }
   }
 
+  m_bSuspended = false;
   m_bStarted = false;
+  m_pFileEventNotify->OnState(FileEventState::Stoped, m_MonOptions.strPath.c_str());
+
   _RPTF0(_CRT_WARN, "Exit Monitor Process\n");
 }
