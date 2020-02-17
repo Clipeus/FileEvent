@@ -34,7 +34,7 @@ INT_PTR OptionsDlg::DoModal(HWND hWnd, LPCTSTR lpTemplateName /*= nullptr*/)
   PSheetHeader.nStartPage = 0;
   PSheetHeader.ppsp = (LPPROPSHEETPAGE)&PSheetPage;
 
-  return PropertySheet(&PSheetHeader);
+  return ::PropertySheet(&PSheetHeader);
 }
 
 void OptionsDlg::OnCommand(HWND hWnd, int id, HWND hWndCtl, UINT codeNotify)
@@ -117,7 +117,7 @@ INT_PTR OptionsDlg::s_DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
     _ASSERTE(dlg);
     if (dlg)
       dlg->m_hWnd = hWnd;
-    SetWindowLongPtr(hWnd, DWLP_USER, reinterpret_cast<LONG_PTR>(dlg));
+    ::SetWindowLongPtr(hWnd, DWLP_USER, reinterpret_cast<LONG_PTR>(dlg));
   }
 
   if (dlg)

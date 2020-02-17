@@ -28,7 +28,7 @@ constexpr int WM_MONITORSTATE = WM_USER + 1;
 constexpr int WM_MONITOREVENT = WM_USER + 2;
 constexpr int WM_MONITORERROR = WM_USER + 3;
 
-TBBUTTON tbButtons[] =
+constexpr TBBUTTON tbButtons[] =
 {
   {MAKELONG(0,  IDC_TOOLBAR_IMAGE_LIST), ID_FILE_OPEN, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0, 0},
   {MAKELONG(1,  IDC_TOOLBAR_IMAGE_LIST), ID_FILE_SAVE, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0, 0},
@@ -46,7 +46,6 @@ TBBUTTON tbButtons[] =
 };
 
 constexpr int ABOUT_IMAGE_INDEX = 10;
-
 
 FileEventWnd::FileEventWnd()
 {

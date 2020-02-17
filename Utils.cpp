@@ -11,7 +11,7 @@ namespace Utils
 
 int ReportBox(LPCWSTR lpszMessage, int nMode /*= MB_OK*/)
 {
-  return MessageBox(::GetApp()->GetMainWnd()->GetHandle(), lpszMessage, ::GetApp()->GetAppName().c_str(), nMode);
+  return ::MessageBox(::GetApp()->GetMainWnd()->GetHandle(), lpszMessage, ::GetApp()->GetAppName().c_str(), nMode);
 }
 
 int ReportBox(UINT uMesID, int nMode /*= MB_OK*/)
@@ -74,7 +74,7 @@ bool GetFixedInfo(VS_FIXEDFILEINFO& rFixedInfo)
 {
   // get the filename of the executable containing the version resource
   TCHAR szFilename[MAX_PATH] = { 0 };
-  if (GetModuleFileName(nullptr, szFilename, MAX_PATH) == 0)
+  if (::GetModuleFileName(nullptr, szFilename, MAX_PATH) == 0)
   {
     _RPTFN(_CRT_ERROR, "GetModuleFileName failed with error %d\n", GetLastError());
     return false;
@@ -82,7 +82,7 @@ bool GetFixedInfo(VS_FIXEDFILEINFO& rFixedInfo)
 
   // allocate a block of memory for the version info
   DWORD dummy;
-  DWORD dwSize = GetFileVersionInfoSize(szFilename, &dummy);
+  DWORD dwSize = ::GetFileVersionInfoSize(szFilename, &dummy);
   if (dwSize == 0)
   {
     _RPTFN(_CRT_ERROR, "GetFileVersionInfoSize failed with error %d\n", GetLastError());
@@ -92,7 +92,7 @@ bool GetFixedInfo(VS_FIXEDFILEINFO& rFixedInfo)
   data.resize(dwSize);
 
   // load the version info
-  if (!GetFileVersionInfo(szFilename, 0, dwSize, data.data()))
+  if (!::GetFileVersionInfo(szFilename, 0, dwSize, data.data()))
   {
     _RPTFN(_CRT_ERROR, "GetFileVersionInfo failed with error %d\n", GetLastError());
     return false;
@@ -100,7 +100,7 @@ bool GetFixedInfo(VS_FIXEDFILEINFO& rFixedInfo)
 
   VS_FIXEDFILEINFO* pFixedInfo;
   UINT uiVerLen = 0;
-  if (VerQueryValue(data.data(), TEXT("\\"), (void**)&pFixedInfo, (UINT*)&uiVerLen) == 0)
+  if (::VerQueryValue(data.data(), TEXT("\\"), (void**)&pFixedInfo, (UINT*)&uiVerLen) == 0)
   {
     _RPTFN(_CRT_ERROR, "VerQueryValue failed with error %d\n", GetLastError());
     return false;
@@ -160,19 +160,19 @@ bool IsWow64Process()
 
 WaitCursor::WaitCursor()
 {
-  m_hPrevCursor = SetCursor(::GetApp()->GetWaitCursor());
+  m_hPrevCursor = ::SetCursor(::GetApp()->GetWaitCursor());
   ::GetApp()->SetWaitCursor(true);
 }
 
 WaitCursor::~WaitCursor()
 {
-  SetCursor(m_hPrevCursor ? m_hPrevCursor : ::GetApp()->GetStdCursor());
+  ::SetCursor(m_hPrevCursor ? m_hPrevCursor : ::GetApp()->GetStdCursor());
   ::GetApp()->SetWaitCursor(false);
 }
 
 LONG WINAPI UnExFilter(EXCEPTION_POINTERS* pExceptionInfo)
 {
-  FatalAppExit(0, LoadString(IDS_UNEXCEPTION).c_str());
+  ::FatalAppExit(0, LoadString(IDS_UNEXCEPTION).c_str());
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -192,7 +192,7 @@ int _handle_out_of_memory(size_t nSize)
 
 void SetGlobalHandlers()
 {
-  SetUnhandledExceptionFilter(UnExFilter);	// For Win32 SEH
+  ::SetUnhandledExceptionFilter(UnExFilter);	// For Win32 SEH
   _set_se_translator(_thread_se_translator);	// For C++ try/catch
   _set_new_handler(_handle_out_of_memory);
   _set_new_mode(1);

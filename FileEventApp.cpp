@@ -16,6 +16,7 @@ FileEventApp::~FileEventApp()
 {
 
 }
+
 FileEventApp* FileEventApp::GetApp()
 {
   if (s_pFileEventApp == nullptr)
@@ -63,7 +64,7 @@ int FileEventApp::Run(int nCmdShow)
   if (!m_pMainWnd->Create(nCmdShow))
     return 1;
 
-  HACCEL hAccel = LoadAccelerators(m_hInstance, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
+  HACCEL hAccel = ::LoadAccelerators(m_hInstance, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
   if (!hAccel)
   {
     Utils::ShowOSError();
@@ -71,12 +72,12 @@ int FileEventApp::Run(int nCmdShow)
   }
 
   MSG msg;
-  while (GetMessage(&msg, nullptr, 0, 0))
+  while (::GetMessage(&msg, nullptr, 0, 0))
   {
-    if (!TranslateAccelerator(m_pMainWnd->GetHandle(), hAccel, &msg))
+    if (!::TranslateAccelerator(m_pMainWnd->GetHandle(), hAccel, &msg))
     {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      ::TranslateMessage(&msg);
+      ::DispatchMessage(&msg);
     }
   }
 
