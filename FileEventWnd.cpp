@@ -356,8 +356,6 @@ void FileEventWnd::SaveFile(const std::wstring& path)
   for (int i = 0; i < nCount; i++)
   {
     FileEventItem* pItem = m_spFileEventList->GetItem(i);
-    std::filesystem::path path = pItem->strDirName;
-    path.append(pItem->strFileName);
 
     if (bFirstLine)
     {
@@ -377,16 +375,17 @@ void FileEventWnd::SaveFile(const std::wstring& path)
       }
     }
 
-    std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
+    std::wstring strDescription = pItem->GetDescription();
 
     int size = ::WideCharToMultiByte(CP_ACP, 0, strDescription.c_str(), -1, nullptr, 0, nullptr, nullptr);
     std::string strDescr(size, 0);
     ::WideCharToMultiByte(CP_ACP, 0, strDescription.c_str(), -1, strDescr.data(), strDescr.size(), nullptr,nullptr);
     strDescr.resize(strDescr.size() - 1);
 
-    size = ::WideCharToMultiByte(CP_ACP, 0, path.wstring().c_str(), -1, nullptr, 0, nullptr, nullptr);
+    std::wstring path = pItem->GetFullPath();
+    size = ::WideCharToMultiByte(CP_ACP, 0, path.c_str(), -1, nullptr, 0, nullptr, nullptr);
     std::string strPath(size, 0);
-    ::WideCharToMultiByte(CP_ACP, 0, path.wstring().c_str(), -1, strPath.data(), strPath.size(), nullptr, nullptr);
+    ::WideCharToMultiByte(CP_ACP, 0, path.c_str(), -1, strPath.data(), strPath.size(), nullptr, nullptr);
     strPath.resize(strPath.size() - 1);
 
     std::string strBuffer = std::to_string(pItem->dwAction) + ";" + strDescr + ";" + strPath + "\r\n";
@@ -411,12 +410,8 @@ void FileEventWnd::CopyToClipboard()
 
     while (FileEventItem* pItem = m_spFileEventList->GetNextItem(nIndex, true))
     {
-      std::filesystem::path path = pItem->strDirName;
-      path.append(pItem->strFileName);
-      std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
-
-      strBuffer += strDescription + L"\r\n"; 
-      strBuffer += path.wstring().c_str();
+      strBuffer += pItem->GetDescription() + L"\r\n";
+      strBuffer += pItem->GetFullPath();
       strBuffer += + L"\r\n\r\n";
     }
 
@@ -569,7 +564,8 @@ bool FileEventWnd::OnFind(FindMode enFindMode)
     {
       if (m_pFindDlg->GetFindFlags() & FindDlg::Flags::FD_ACTION)
       {
-        std::wstring strText = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
+        std::wstring strText = pItem->GetDescription();
+
         std::transform(strText.cbegin(), strText.cend(), strText.begin(), toupper);
 
         if (compare(strText, strFindText, nIndex))
@@ -578,9 +574,7 @@ bool FileEventWnd::OnFind(FindMode enFindMode)
 
       if (m_pFindDlg->GetFindFlags() & FindDlg::Flags::FD_PATH)
       {
-        std::filesystem::path path = pItem->strDirName;
-        path.append(pItem->strFileName);
-        std::wstring strText = path.wstring();
+        std::wstring strText = pItem->GetFullPath();
         std::transform(strText.cbegin(), strText.cend(), strText.begin(), toupper);
 
         if (compare(strText, strFindText, nIndex))
@@ -929,15 +923,13 @@ LRESULT FileEventWnd::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
       {
         case 0:
         {
-          std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
+          std::wstring strDescription = pItem->GetDescription();
           wcscpy_s(lpDi->item.pszText, lpDi->item.cchTextMax, strDescription.c_str());
           break;
         }
         case 1:
         {
-          std::filesystem::path path = pItem->strDirName;
-          path.append(pItem->strFileName);
-          wcscpy_s(lpDi->item.pszText, lpDi->item.cchTextMax, path.wstring().c_str());
+          wcscpy_s(lpDi->item.pszText, lpDi->item.cchTextMax, pItem->GetFullPath().c_str());
           break;
         }
       }
@@ -956,6 +948,7 @@ LRESULT FileEventWnd::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
       {
         delete (FileEventItem*)plvItem->lParam;
       }
+      break;
     }
     case NM_DBLCLK:
     {
@@ -1158,6 +1151,8 @@ void FileEventWnd::OnMonitorState(HWND hWnd, FileEventState eState, const std::w
 void FileEventWnd::OnMonitorEvent(HWND hWnd, FileEventItem* pItem)
 {
   m_spFileEventList->AddItem(pItem);
+  long nCount = ListView_GetItemCount(*m_spFileEventList);
+  ListView_EnsureVisible(*m_spFileEventList, nCount - 1, false);
   m_bDirty = true;
 }
 
