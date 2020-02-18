@@ -50,20 +50,17 @@ bool FileEventList::AddItem(FileEventItem* pItem)
   LVITEM lvItem;
 
   lvItem.mask = LVIF_TEXT | LVIF_PARAM;
-  lvItem.pszText = &pItem->strDescription.front();
-  lvItem.cchTextMax = 255;//pItem->strDescription.size();
+  lvItem.pszText = LPSTR_TEXTCALLBACK;
+  lvItem.cchTextMax = 0;
   lvItem.iSubItem = 0;
   lvItem.iItem = ListView_GetItemCount(m_hWnd);
   lvItem.lParam = (LONG_PTR)pItem;
   if (-1 == ListView_InsertItem(m_hWnd, &lvItem))
     return false;
 
-  std::filesystem::path path = pItem->strDirName;
-  path.append(pItem->strFileName);
-  std::wstring str = path.wstring();
   lvItem.mask = LVIF_TEXT;
-  lvItem.pszText = &str.front();
-  lvItem.cchTextMax = str.size();
+  lvItem.pszText = LPSTR_TEXTCALLBACK;
+  lvItem.cchTextMax = 0;
   lvItem.iSubItem = 1;
   if (!ListView_SetItem(m_hWnd, &lvItem))
     return false;

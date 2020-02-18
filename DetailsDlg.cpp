@@ -12,10 +12,11 @@ bool DetailsDlg::OnInitDialog(HWND hWnd, HWND hWndFocus, LPARAM lParam)
   std::wstring strAction = std::to_wstring(m_pItem->dwAction);
   std::filesystem::path path = m_pItem->strDirName;
   path.append(m_pItem->strFileName);
+  std::wstring strDescription = std::get_if<UINT>(&m_pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(m_pItem->varDescription)) : std::get<std::wstring>(m_pItem->varDescription);
 
   ::SetDlgItemText(m_hWnd, IDC_INFO, 
     Utils::StrFormat(Utils::LoadString(IDS_INFO_FORMAT).c_str(), 
-      m_pItem->strDirName.c_str(), m_pItem->dwAction, m_pItem->strDescription.c_str(), path.c_str()).c_str());
+      m_pItem->strDirName.c_str(), m_pItem->dwAction, strDescription.c_str(), path.c_str()).c_str());
 
   return DialogBase::OnInitDialog(hWnd, hWndFocus, lParam);
 }

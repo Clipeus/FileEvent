@@ -11,7 +11,7 @@ struct FileEventItem
   DWORD dwAction = 0;
   std::wstring strDirName;
   std::wstring strFileName;
-  std::wstring strDescription;
+  std::variant<UINT, std::wstring> varDescription;
 };
 
 enum class FileEventState : uint8_t

@@ -15,6 +15,7 @@
 constexpr int IDC_TOOLBAR_IMAGE_LIST = 0;
 constexpr int IDC_MAIN_STATUSBAR = IDC_TOOLBAR_IMAGE_LIST + 1;
 constexpr int IDC_LIST_VIEW = IDC_MAIN_STATUSBAR + 1;
+constexpr int IDC_MAIN_TOOLBAR = IDC_LIST_VIEW + 1;
 
 constexpr int TOOLBAR_BUTTON_SIZE = 16;
 
@@ -329,7 +330,7 @@ void FileEventWnd::OpenFile(const std::wstring& path)
 
     std::unique_ptr<FileEventItem> pItem(new FileEventItem);
     pItem->dwAction = std::stol(strPart1);
-    pItem->strDescription = strPart2;
+    pItem->varDescription = strPart2;
     pItem->strDirName = strDirPath;
     pItem->strFileName = strPart3;
 
@@ -376,9 +377,11 @@ void FileEventWnd::SaveFile(const std::wstring& path)
       }
     }
 
-    int size = ::WideCharToMultiByte(CP_ACP, 0, pItem->strDescription.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
+
+    int size = ::WideCharToMultiByte(CP_ACP, 0, strDescription.c_str(), -1, nullptr, 0, nullptr, nullptr);
     std::string strDescr(size, 0);
-    ::WideCharToMultiByte(CP_ACP, 0, pItem->strDescription.c_str(), -1, strDescr.data(), strDescr.size(), nullptr,nullptr);
+    ::WideCharToMultiByte(CP_ACP, 0, strDescription.c_str(), -1, strDescr.data(), strDescr.size(), nullptr,nullptr);
     strDescr.resize(strDescr.size() - 1);
 
     size = ::WideCharToMultiByte(CP_ACP, 0, path.wstring().c_str(), -1, nullptr, 0, nullptr, nullptr);
@@ -410,8 +413,9 @@ void FileEventWnd::CopyToClipboard()
     {
       std::filesystem::path path = pItem->strDirName;
       path.append(pItem->strFileName);
+      std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
 
-      strBuffer += pItem->strDescription + L"\r\n"; 
+      strBuffer += strDescription + L"\r\n"; 
       strBuffer += path.wstring().c_str();
       strBuffer += + L"\r\n\r\n";
     }
@@ -565,7 +569,7 @@ bool FileEventWnd::OnFind(FindMode enFindMode)
     {
       if (m_pFindDlg->GetFindFlags() & FindDlg::Flags::FD_ACTION)
       {
-        std::wstring strText = pItem->strDescription;
+        std::wstring strText = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
         std::transform(strText.cbegin(), strText.cend(), strText.begin(), toupper);
 
         if (compare(strText, strFindText, nIndex))
@@ -643,7 +647,7 @@ bool FileEventWnd::OnCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
   m_hWnd = hWnd;
 
-  m_hToolBar = ::CreateWindowEx(0, TOOLBARCLASSNAME, nullptr, WS_CHILD | WS_BORDER | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_WRAPABLE, 0, 0, 0, 0, m_hWnd, nullptr, ::GetApp()->GetInstance(), nullptr);
+  m_hToolBar = ::CreateWindowEx(0, TOOLBARCLASSNAME, nullptr, WS_CHILD | WS_BORDER | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_WRAPABLE, 0, 0, 0, 0, m_hWnd, (HMENU)IDC_MAIN_TOOLBAR, ::GetApp()->GetInstance(), nullptr);
   if (!m_hToolBar)
   {
     Utils::ShowOSError();
@@ -719,7 +723,7 @@ void FileEventWnd::OnSize(HWND hWnd, UINT state, int cx, int cy)
   nTop = Rect.bottom - Rect.top - 1;
 
   ::GetWindowRect(m_hStatusBar, &Rect);
-  nBottom = Rect.bottom - Rect.top;
+  nBottom = Rect.bottom - Rect.top - 1;
 
   m_spFileEventList->AdjustRect(0, nTop, cx, cy - nBottom - nTop);
 }
@@ -909,12 +913,34 @@ LRESULT FileEventWnd::OnNotify(HWND hWnd, int idFrom, NMHDR* pNmndr)
   {
     case TTN_GETDISPINFO:
     {
-      LPTOOLTIPTEXT lpTTT = (LPTOOLTIPTEXT)pNmndr;
+      LPTOOLTIPTEXT lpTTT = reinterpret_cast<LPTOOLTIPTEXT>(pNmndr);
       std::wstring strText = Utils::LoadString(idFrom == ID_MONITOR_PAUSE && m_spFileEventMonitor->IsSuspended() ? ID_MONITOR_RESUME : idFrom);
       size_t pos = strText.find(L'\n');
       if (std::wstring::npos != pos)
         strText = strText.substr(pos + 1);
       wcsncpy_s(lpTTT->szText, strText.c_str(), sizeof(lpTTT->szText));
+      return true;
+    }
+    case LVN_GETDISPINFO:
+    {
+      NMLVDISPINFO* lpDi = reinterpret_cast<NMLVDISPINFO*>(pNmndr);
+      FileEventItem* pItem = reinterpret_cast<FileEventItem*>(lpDi->item.lParam);
+      switch (lpDi->item.iSubItem)
+      {
+        case 0:
+        {
+          std::wstring strDescription = std::get_if<UINT>(&pItem->varDescription) != nullptr ? Utils::LoadString(std::get<UINT>(pItem->varDescription)) : std::get<std::wstring>(pItem->varDescription);
+          wcscpy_s(lpDi->item.pszText, lpDi->item.cchTextMax, strDescription.c_str());
+          break;
+        }
+        case 1:
+        {
+          std::filesystem::path path = pItem->strDirName;
+          path.append(pItem->strFileName);
+          wcscpy_s(lpDi->item.pszText, lpDi->item.cchTextMax, path.wstring().c_str());
+          break;
+        }
+      }
       return true;
     }
     case LVN_ITEMCHANGED:

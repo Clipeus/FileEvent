@@ -143,23 +143,22 @@ void FileEventMonitor::Process()
         switch (pNotify->Action)
         {
           case FILE_ACTION_ADDED:
-            pItem->strDescription = Utils::LoadString(IDS_FILE_ACTION_ADDED);
+            pItem->varDescription = IDS_FILE_ACTION_ADDED;
             break;
           case FILE_ACTION_REMOVED:
-            pItem->strDescription = Utils::LoadString(IDS_FILE_ACTION_REMOVED);
+            pItem->varDescription = IDS_FILE_ACTION_REMOVED;
             break;
           case FILE_ACTION_MODIFIED:
-            pItem->strDescription = Utils::LoadString(IDS_FILE_ACTION_MODIFIED);
+            pItem->varDescription = IDS_FILE_ACTION_MODIFIED;
             break;
           case FILE_ACTION_RENAMED_OLD_NAME:
-            pItem->strDescription = Utils::LoadString(IDS_FILE_ACTION_RENAMED_OLD_NAME);
+            pItem->varDescription = IDS_FILE_ACTION_RENAMED_OLD_NAME;
             break;
           case FILE_ACTION_RENAMED_NEW_NAME:
-            pItem->strDescription = Utils::LoadString(IDS_FILE_ACTION_RENAMED_NEW_NAME);
+            pItem->varDescription = IDS_FILE_ACTION_RENAMED_NEW_NAME;
             break;
           default:
-            pItem->strDescription = Utils::LoadString(IDS_UNKNOWN_ACTION);
-            pItem->strDescription += std::to_wstring(pNotify->Action);
+            pItem->varDescription = IDS_UNKNOWN_ACTION;
             break;
         }
 
