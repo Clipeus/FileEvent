@@ -98,13 +98,15 @@ bool FileEventWnd::Create(int nCmdShow)
     std::vector<unsigned char> buf(sizeof(WINDOWPLACEMENT));
     if (Utils::RegistryW::Value(::GetApp()->GetRegistryRoot(), L"WindowPos", buf))
       ::SetWindowPlacement(m_hWnd, reinterpret_cast<LPWINDOWPLACEMENT>(buf.data()));
+    else
+      ::ShowWindow(m_hWnd, nCmdShow);
   }
   else
   {
-    ShowWindow(m_hWnd, nCmdShow);
+    ::ShowWindow(m_hWnd, nCmdShow);
   }
 
-  UpdateWindow(m_hWnd);
+  ::UpdateWindow(m_hWnd);
 
   return true;
 }
